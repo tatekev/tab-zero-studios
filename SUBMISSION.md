@@ -1,10 +1,10 @@
 # Marketplace submission copy (DRAFT; Kevin presses Submit)
 
-Org name: Tab Zero Studio
-Handle: tabzerostudio   (fallback: tabzero-studio)
+Org name: Tab Zero Studios
+Handle: tabzerostudios   (fallback: tabzero-studios)
 Work email: itskevtate@gmail.com (default; change if wanted)
 Website URL: optional, leave blank
-Logo: logo-tab-zero-studio-1024.png (1:1 PNG, dark plate)
+Logo: logo-tab-zero-studios-1024.png (1:1 PNG, dark plate)
 Note: form also asks "Where do you want to be listed?" (options not visible without the live form; pick Grok Bot).
 
 ## Unpack
@@ -16,6 +16,6 @@ A tax-document checklist and tracker for employees, investors, self-employed peo
 ## HOA Board Desk
 Helps HOA boards turn outdated info into a clean, accessible site, FAQ, and monthly newsletter. Flags stale dates and placeholder text, cites sources in the FAQ, and drafts everything for board review. Not legal advice.
 
-Repo URL: https://github.com/tatekev/tab-zero-studio
-Logo URL (raw): https://raw.githubusercontent.com/tatekev/tab-zero-studio/main/logo-tab-zero-studio-1024.png
+Repo URL: https://github.com/tatekev/tab-zero-studios
+Logo URL (raw): https://raw.githubusercontent.com/tatekev/tab-zero-studios/main/logo-tab-zero-studios-1024.png
 Subfolders: Unpack -> /unpack, CPA Doc Prep -> /cpa-doc-prep, HOA Board Desk -> /hoa-board-desk

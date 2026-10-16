@@ -2,7 +2,7 @@
 
 Turns outdated HOA info into a clean site, FAQ, and newsletter for board review.
 
-Part of **Tab Zero Studio** — *Tools for Atypical Thinkers, Everywhere.*
+Part of **Tab Zero Studios** — *Tools for Atypical Thinkers, Everywhere.*
 
 ## Run
 ```

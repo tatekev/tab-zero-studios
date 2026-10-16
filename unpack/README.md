@@ -2,7 +2,7 @@
 
 Turns a confusing letter or bill into: what it is, what to do, and by when.
 
-Part of **Tab Zero Studio** — *Tools for Atypical Thinkers, Everywhere.*
+Part of **Tab Zero Studios** — *Tools for Atypical Thinkers, Everywhere.*
 
 ## Run
 ```

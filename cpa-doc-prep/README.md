@@ -2,7 +2,7 @@
 
 Tax-document checklist and tracker, plus a draft email or text to your preparer. Organizes paperwork only; never gives tax advice.
 
-Part of **Tab Zero Studio** — *Tools for Atypical Thinkers, Everywhere.*
+Part of **Tab Zero Studios** — *Tools for Atypical Thinkers, Everywhere.*
 
 ## Run
 ```

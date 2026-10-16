@@ -1,4 +1,4 @@
-# Tab Zero Studio (TZS)
+# Tab Zero Studios (TZS)
 *Tools for Atypical Thinkers, Everywhere.* — Systems for Pretty Chaotic You.
 
 Three small, offline MCP servers: `unpack/`, `cpa-doc-prep/`, `hoa-board-desk/`. Each has its own README and tests. Sample data only.
