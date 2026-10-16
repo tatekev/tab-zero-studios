@@ -23,6 +23,11 @@ def check_sensitive(text: str) -> dict:
     return core.sensitive_check(text)
 
 @mcp.tool()
+def scope_check(text: str) -> dict:
+    """Check whether a question asks for tax advice or an amount owed (this tool never answers those)."""
+    return core.scope_check(text)
+
+@mcp.tool()
 def draft_preparer_message(checklist: list[dict], preparer: str = "your preparer", sender: str = "me", channel: str = "email", note: str = "") -> dict:
     """Draft (never send) an email or text to a tax preparer listing what is ready and missing. No tax advice."""
     return core.draft_message(checklist, preparer, sender, channel, note)

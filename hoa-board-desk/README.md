@@ -18,4 +18,4 @@ MCP client config: `{"command":"python","args":["server.py"],"cwd":"hoa-board-de
 - `make_site(...)`: writes a 3-page accessible static site
 
 ## Privacy and limits
-Runs fully offline. Stores nothing and sends nothing. Use sample or pasted text only; never full SSNs or card numbers. Not legal, tax, or financial advice.
+Runs fully offline and sends nothing. The only thing it writes is the 3 site files in the folder you choose with `make_site`. Audit flags are prompts to check, not verdicts. FAQ answers show the sources you provide; answers without one are labeled for the board to confirm. Not legal, tax, or financial advice.

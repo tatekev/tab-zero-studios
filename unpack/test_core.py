@@ -14,8 +14,8 @@ def test_no_date():
     r = unpack("Thanks for being a member. Newsletter inside.", T)
     assert "No clear date" in r["by_when"] and r["urgency"] == "low"
 def test_hoa_and_markdown():
-    assert classify("The Homeowners Association annual assessment is due") == "hoa notice"
+    assert classify("The Homeowners Association annual assessment is due")[0] == "HOA notice"
     assert "## By when?" in to_markdown(unpack(BILL, T))
 def test_past_date_ignored():
     r = unpack("Please respond by 01/05/2026.", T)
-    assert r["dates_in_the_past"] == ["2026-01-05"] and "No clear date" in r["by_when"]
+    assert r["dates_in_the_past"] == ["2026-01-05"] and "have passed" in r["by_when"] and "overdue" in r["by_when"]

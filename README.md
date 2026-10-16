@@ -3,3 +3,5 @@
 
 Three small, offline MCP servers: `unpack/`, `cpa-doc-prep/`, `hoa-board-desk/`. Each has its own README and tests. Sample data only.
 Run all tests: `for d in unpack cpa-doc-prep hoa-board-desk; do (cd $d && python -m pytest -q); done`
+
+Self-check: `./run_all_checks.sh`. Testing guide: `TESTING.md`. Latest results: `TEST-RESULTS.md`.

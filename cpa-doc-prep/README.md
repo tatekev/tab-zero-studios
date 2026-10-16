@@ -16,7 +16,8 @@ MCP client config: `{"command":"python","args":["server.py"],"cwd":"cpa-doc-prep
 - `make_checklist(profiles)`: employee, investor, self_employed, parent, homeowner
 - `mark_item`, `checklist_summary`
 - `check_sensitive(text)`: flags full SSN/card numbers
+- `scope_check(text)`: says so when a question asks for tax advice or an amount owed
 - `draft_preparer_message(...)`: draft only; you press send
 
 ## Privacy and limits
-Runs fully offline. Stores nothing and sends nothing. Use sample or pasted text only; never full SSNs or card numbers. Not legal, tax, or financial advice.
+Runs fully offline. Stores nothing and sends nothing; your client app keeps the checklist between calls. It checks only text passed to its tools (it can't stop you typing a number elsewhere). It refuses to put SSN/card-like numbers in a draft, and never computes tax or gives advice. Not legal, tax, or financial advice.

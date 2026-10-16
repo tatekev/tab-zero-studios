@@ -17,4 +17,4 @@ MCP client config: `{"command":"python","args":["server.py"],"cwd":"unpack"}`
 - `unpack_letter_markdown(text)`: short brain-friendly card
 
 ## Privacy and limits
-Runs fully offline. Stores nothing and sends nothing. Use sample or pasted text only; never full SSNs or card numbers. Not legal, tax, or financial advice.
+Runs fully offline. Stores nothing and sends nothing. English only. Never invents a deadline: if none is found it says so, and "within N days" is quoted, not calculated. Hides SSN-like and card-like numbers. Paste only the letter text. Not guaranteed to catch every date format. Not legal, tax, or financial advice.

@@ -1,6 +1,6 @@
 """CPA Doc Prep core: checklist + tracker + draft message to a preparer.
 Organizes paperwork only. Never computes tax or gives tax advice. Sample data only; never store full SSNs/card numbers."""
-import re
+import re, unicodedata
 
 CATALOG = {
     "w2": ("W-2 from each employer", "Employer, by Jan 31"),
@@ -24,50 +24,96 @@ PROFILES = {
     "parent": ["childcare", "1095", "id"],
     "homeowner": ["1098", "property_tax"],
 }
-SSN = re.compile(r"\b\d{3}-?\d{2}-?\d{4}\b")
-CARD = re.compile(r"\b(?:\d[ -]?){13,16}\b")
+SSN = re.compile(r"(?<![\d-])\d{3}[-.\s]{0,3}\d{2}[-.\s]{0,3}\d{4}(?![\d-])")
+CARD = re.compile(r"(?<![\d-])(?:\d{4}[ .-]){3}\d{1,7}(?![\d-])|(?<![\d-])\d{4}[ .-]\d{6}[ .-]\d{5}(?![\d-])|(?<![\d-])\d{13,19}(?![\d-])")
+STATUSES = ("missing", "received", "sent_to_preparer", "not_applicable")
+CHANNELS = ("email", "text")
+MAX_NOTE = 2000
+TAX_QUESTION = re.compile(r"\b(?:how much|what(?:'s| is| will)?)\b[^.?!]{0,40}\b(?:tax(?:es)?|refund|owe|deduct\w*)\b|\bwill i (?:owe|get a refund)\b|\bshould i (?:itemi[sz]e|deduct|claim|file)\b|\bcan i (?:deduct|write off|claim)\b|\bam i (?:eligible|required)\b|\bhow much (?:do|will) i owe\b", re.I)
+ADVICE_MSG = "This tool only organizes tax paperwork. It can't work out what you owe or give tax advice. Ask your tax preparer."
+
+def _norm(text):
+    return unicodedata.normalize("NFKC", text if isinstance(text, str) else ("" if text is None else str(text)))
+
+def _profile_key(p):
+    return re.sub(r"[\s-]+", "_", _norm(p).strip().lower())
 
 def build_checklist(profiles):
-    keys = []
+    if isinstance(profiles, str):
+        profiles = [profiles]
+    if not profiles:
+        raise ValueError("Pick at least one profile: " + ", ".join(PROFILES))
+    keys, bad = [], []
     for p in profiles:
-        for k in PROFILES.get(p.lower(), []):
+        pk = _profile_key(p)
+        if pk not in PROFILES:
+            bad.append(str(p)); continue
+        for k in PROFILES[pk]:
             if k not in keys:
                 keys.append(k)
+    if bad:
+        raise ValueError("Unknown profile: " + ", ".join(bad) + ". Valid profiles: " + ", ".join(PROFILES))
     return [{"id": k, "item": CATALOG[k][0], "usually_from": CATALOG[k][1], "status": "missing"} for k in keys]
 
 def update_status(checklist, item_id, status):
-    if status not in ("missing", "received", "sent_to_preparer", "not_applicable"):
-        raise ValueError("bad status")
+    status = _profile_key(status)
+    if status not in STATUSES:
+        raise ValueError("Status must be one of: " + ", ".join(STATUSES))
     for c in checklist:
         if c["id"] == item_id:
             c["status"] = status
             return checklist
-    raise KeyError(item_id)
+    raise KeyError(f"No checklist item '{item_id}'. Valid ids: " + ", ".join(c["id"] for c in checklist))
 
 def summary(checklist):
-    out = {}
+    out = {s: [] for s in STATUSES}
     for c in checklist:
         out.setdefault(c["status"], []).append(c["item"])
+    out["counts"] = {s: len(out[s]) for s in STATUSES}
     return out
 
 def sensitive_check(text):
-    """Flag full SSN / card numbers so they are never put in a draft."""
-    return {"has_ssn": bool(SSN.search(text)), "has_card": bool(CARD.search(text))}
+    """Flag full SSN / card numbers so they are never put in a draft. Never echoes the number."""
+    t = _norm(text)
+    has_ssn, has_card = bool(SSN.search(t)), bool(CARD.search(t))
+    red = SSN.sub("[removed]", CARD.sub("[removed]", t)) if (has_ssn or has_card) else t
+    msg = ("Looks like a full SSN or card number. Don't paste it here. Share it only by your preparer's secure portal, or use the last 4 digits." if (has_ssn or has_card) else "No full SSN or card number found.")
+    return {"has_ssn": has_ssn, "has_card": has_card, "safe": not (has_ssn or has_card), "message": msg, "redacted_text": red,
+            "looks_like_tax_question": bool(TAX_QUESTION.search(t))}
+
+def scope_check(text):
+    """Tell the user when they ask for tax advice / amounts; this tool never answers those."""
+    q = bool(TAX_QUESTION.search(_norm(text)))
+    return {"is_tax_advice_request": q, "message": ADVICE_MSG if q else "OK. This is a paperwork question."}
 
 def draft_message(checklist, preparer="your preparer", sender="me", channel="email", note=""):
-    if sensitive_check(note)["has_ssn"] or sensitive_check(note)["has_card"]:
-        raise ValueError("Remove SSN or card numbers from the note. Send those by a secure portal.")
-    sent = [c["item"] for c in checklist if c["status"] in ("received", "sent_to_preparer")]
-    missing = [c["item"] for c in checklist if c["status"] == "missing"]
-    lines = [f"Hi {preparer},", ""]
-    if sent:
-        lines += ["I have these ready for you:"] + [f"- {i}" for i in sent] + [""]
-    if missing:
-        lines += ["Still waiting on:"] + [f"- {i}" for i in missing] + [""]
-    if note:
-        lines += [note, ""]
-    lines += ["Please tell me if anything else is needed, and how you want me to send it securely.", "", f"Thanks, {sender}"]
-    body = "\n".join(lines)
-    if channel == "text":
-        body = body.replace("\n- ", "; ").replace("\n\n", " ")
-    return {"channel": channel, "draft": body, "note": "Draft only. You review and press send. This is not tax advice."}
+    channel = _profile_key(channel)
+    if channel not in CHANNELS:
+        raise ValueError("channel must be 'email' or 'text'")
+    fields = [preparer, sender, note] + [str(c.get(k, "")) for c in checklist for k in ("item", "usually_from", "id")]
+    for f in fields:
+        r = sensitive_check(f)
+        if not r["safe"]:
+            raise ValueError("Remove SSN or card numbers first. Send those only by a secure portal, or use the last 4 digits.")
+    preparer, sender, note = _norm(preparer).strip() or "your preparer", _norm(sender).strip() or "me", _norm(note).strip()[:MAX_NOTE]
+    sent = [c["item"] for c in checklist if c.get("status") in ("received", "sent_to_preparer")]
+    missing = [c["item"] for c in checklist if c.get("status") == "missing"]
+    warnings = []
+    if TAX_QUESTION.search(note):
+        warnings.append(ADVICE_MSG + " Your note is included only as a question for your preparer.")
+    if channel == "email":
+        lines = [f"Hi {preparer},", ""]
+        if sent: lines += ["I have these ready for you:"] + [f"- {i}" for i in sent] + [""]
+        if missing: lines += ["Still waiting on:"] + [f"- {i}" for i in missing] + [""]
+        if note: lines += [note, ""]
+        lines += ["Please tell me if anything else is needed, and how you want me to send it securely.", "", f"Thanks, {sender}"]
+        body = "\n".join(lines)
+    else:
+        parts = [f"Hi {preparer}."]
+        if sent: parts.append("Ready for you: " + "; ".join(sent) + ".")
+        if missing: parts.append("Still waiting on: " + "; ".join(missing) + ".")
+        if note: parts.append(note)
+        parts.append(f"How should I send these securely? Thanks, {sender}")
+        body = " ".join(parts)
+    return {"channel": channel, "draft": body, "warnings": warnings,
+            "note": "Draft only. Nothing was sent. You review and press send. This is not tax advice."}

@@ -18,9 +18,9 @@ def make_newsletter(name: str, month: str, news: list[str], dates: list[dict], r
     return core.build_newsletter(name, month, news, dates, reminders)
 
 @mcp.tool()
-def make_site(name: str, intro: str, faq_md: str, newsletter_md: str, out_dir: str) -> list[str]:
+def make_site(name: str, intro: str, faq_md: str, newsletter_md: str, out_dir: str, lang: str = "en") -> list[str]:
     """Write a clean 3-page static site (home, FAQ, newsletter) into out_dir."""
-    return core.build_site(name, intro, faq_md, newsletter_md, out_dir)
+    return core.build_site(name, intro, faq_md, newsletter_md, out_dir, lang)
 
 if __name__ == "__main__":
     mcp.run()
