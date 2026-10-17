@@ -2,7 +2,7 @@
 
 ## Run the automatic tests
 1. `cd tab-zero-studios/cpa-doc-prep && ../.venv/bin/python -m pytest -q`.
-2. **Pass:** `54 passed`. **Broken:** any `FAILED`.
+2. **Pass:** `67 passed`. **Broken:** any `FAILED`.
 3. Server check from the top folder: `.venv/bin/python mcp_smoke.py`. **Pass:** all `PASS`, `18/18`.
 
 ## 5 samples (tool name, what to send, expected)
@@ -26,3 +26,9 @@ A number for what you owe; a full SSN/card in any draft; "sent" wording; a check
 
 ## What "pass" means
 All 5 samples match and all automatic tests pass.
+
+## Messy-input checks (all automated in `mcp_end_user.py`)
+SSN or card typed as `1 2 3 - 4 5 - 6 7 8 9`, `123/45/6789`, with en-dashes or zero-width characters: flagged and refused in drafts. Tax-advice questions such as `do I need to file?`, `is my mortgage interest deductible`, `calculate my taxes`: declined. Notes over 2000 characters are cut and the draft says so. Accented letters and Japanese text work.
+
+## Messy-input checks (all automated in `mcp_end_user.py`)
+SSN or card typed as `1 2 3 - 4 5 - 6 7 8 9`, `123/45/6789`, with en-dashes or zero-width characters: flagged and refused in drafts. Tax-advice questions such as `do I need to file?`, `is my mortgage interest deductible`, `calculate my taxes`: declined. Notes over 2000 characters are cut and the draft says so. Accented letters and Japanese text work.

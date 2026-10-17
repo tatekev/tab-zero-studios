@@ -15,6 +15,8 @@ DATE_PATTERNS = [
     (re.compile(r"\b(" + MON + r")\.?\s+(\d{1,2})(?:st|nd|rd|th)?\s*,?\s+(\d{4})\b", re.I), "mdy"),
     (re.compile(r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(" + MON + r")\.?,?\s+(\d{4})\b", re.I), "dmy"),
 ]
+# "Oct 1" with no year (the word "may" only counts when a day number follows)
+NOYEAR = re.compile(r"\b(" + MON + r")\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b(?!\s*,?\s*\d{4})(?!:)", re.I)
 PLACEHOLDERS = re.compile(
     r"\b(?:tbd|tba|tbc|coming soon|under construction|to be (?:announced|determined|decided)|check back|stay tuned|lorem ipsum|insert [\w ]{1,20} here|your name here|n/a)\b"
     r"|x{3,}[-\s.]?x{3,}|\(?xxx\)?[-\s.]?xxx[-\s.]?xxxx|xxx-xxxx|\[(?:insert|date|name|phone|email|tbd)[^\]]*\]|\b555-01\d\d\b|\bxx/xx(?:/xx(?:xx)?)?\b|\b(?:mm/dd/yyyy|month dd)\b", re.I)
@@ -58,6 +60,18 @@ def audit(text, today=None):
         for raw, d, _, _ in dates:
             if d < today:
                 why.append(f"date {raw} has passed")
+        for p, kind in DATE_PATTERNS:
+            for m in p.finditer(line):
+                if not any(a <= m.start() < b for _, _, a, b in dates) and kind in ("iso", "us"):
+                    why.append(f"date {m.group(0)} is not a real calendar date")
+        for m in NOYEAR.finditer(line):
+            if any(a <= m.start() < b for a, b in spans):
+                continue
+            d = _mk(today.year, MONTHS[m.group(1).lower()], int(m.group(2)))
+            if d is None:
+                why.append(f"date {m.group(0)} is not a real calendar date")
+            elif d < today:
+                why.append(f"date {m.group(0)} has no year and may have passed")
         years = [int(m.group(1)) for m in YEAR.finditer(line) if not any(a <= m.start() < b for a, b in spans)]
         if years and max(years) < today.year:
             why.append(f"mentions {max(years)}, before this year")
@@ -79,11 +93,16 @@ def build_faq(facts):
             skipped += 1; continue
         src = f" _(Source: {str(f['source']).strip()})_" if str(f.get("source", "")).strip() else NO_SOURCE
         out += [f"## {str(f['q']).strip()}", f"{str(f['a']).strip()}{src}", ""]
+    flagged = audit("\n".join(out))
+    if flagged:
+        out += [f"_Board check: {len(flagged)} line(s) above look outdated or unfinished (past dates or placeholders like TBD). Fix before publishing._", ""]
     if skipped:
         out += [f"_Board note: {skipped} entr{'y was' if skipped == 1 else 'ies were'} skipped because the question or answer was blank._", ""]
     return "\n".join(out)
 
 def build_newsletter(name, month, news, dates, reminders=()):
+    if not str(name or "").strip() or not str(month or "").strip():
+        raise ValueError("Give the community name and the month.")
     out = [f"# {name} Newsletter: {month}", "", "## What's new"]
     out += [f"- {n}" for n in (news or [])] or ["- No news this month."]
     out += ["", "## Dates to remember"]
@@ -91,6 +110,9 @@ def build_newsletter(name, month, news, dates, reminders=()):
     out += [f"- **{d['date']}**: {d['what']}" for d in good] or ["- No dates to remember this month."]
     if reminders:
         out += ["", "## Friendly reminders"] + [f"- {r}" for r in reminders]
+    flagged = audit("\n".join(out))
+    if flagged:
+        out += ["", f"_Board check: {len(flagged)} line(s) above look outdated or unfinished (past dates or placeholders like TBD). Fix before sending._"]
     out += ["", "_Questions? Contact the board using the details on the community site. Draft for board review before sending._"]
     return "\n".join(out)
 

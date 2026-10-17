@@ -29,11 +29,24 @@ CARD = re.compile(r"(?<![\d-])(?:\d{4}[ .-]){3}\d{1,7}(?![\d-])|(?<![\d-])\d{4}[
 STATUSES = ("missing", "received", "sent_to_preparer", "not_applicable")
 CHANNELS = ("email", "text")
 MAX_NOTE = 2000
-TAX_QUESTION = re.compile(r"\b(?:how much|what(?:'s| is| will)?)\b[^.?!]{0,40}\b(?:tax(?:es)?|refund|owe|deduct\w*)\b|\bwill i (?:owe|get a refund)\b|\bshould i (?:itemi[sz]e|deduct|claim|file)\b|\bcan i (?:deduct|write off|claim)\b|\bam i (?:eligible|required)\b|\bhow much (?:do|will) i owe\b", re.I)
+TAX_QUESTION = re.compile(r"\b(?:calculate|compute|estimate|figure out|work out)\b[^.?!]{0,30}\b(?:tax(?:es)?|refund|owe|deduction)\b|\bwhat (?:do|did|would|will) i owe\b|\b(?:tax bracket|deductible|tax credit)\b|\bdo i (?:qualify|need to file|have to file|need to pay)\b|\bam i (?:allowed|supposed) to\b|\bcan i (?:file|claim)\b|\b(?:how much|what(?:'s| is| will)?)\b[^.?!]{0,40}\b(?:tax(?:es)?|refund|owe|deduct\w*)\b|\bwill i (?:owe|get a refund)\b|\bshould i (?:itemi[sz]e|deduct|claim|file)\b|\bcan i (?:deduct|write off|claim)\b|\bam i (?:eligible|required)\b|\bhow much (?:do|will) i owe\b", re.I)
 ADVICE_MSG = "This tool only organizes tax paperwork. It can't work out what you owe or give tax advice. Ask your tax preparer."
 
 def _norm(text):
-    return unicodedata.normalize("NFKC", text if isinstance(text, str) else ("" if text is None else str(text)))
+    t = unicodedata.normalize("NFKC", text if isinstance(text, str) else ("" if text is None else str(text)))
+    return "".join(c for c in t if c in "\n\t" or unicodedata.category(c) not in ("Cc", "Cf", "Co", "Cs"))
+
+_DASHES = dict.fromkeys(map(ord, "\u2010\u2011\u2012\u2013\u2014\u2015\u2212\ufe58\ufe63\uff0d"), "-")
+# Loose patterns catch disguised numbers: "1 2 3 - 4 5 - 6 7 8 9", "123/45/6789", "123_45_6789"
+_SEP = r"[\s\-./_]{0,3}"
+_LB = r"(?<!\d)(?<!\d[\s\-./_])(?<!\d[\s\-./_]{2})(?<!\d[\s\-./_]{3})"
+_LA = r"(?![\s\-./_]{0,3}\d)"   # not part of a longer digit run, so lists of dates are left alone
+LOOSE_SSN = re.compile(_LB + r"(?:\d" + _SEP + r"){8}\d" + _LA)
+LOOSE_CARD = re.compile(_LB + r"(?:\d" + _SEP + r"){12,18}\d" + _LA)
+
+def _hide_numbers(t):
+    t = t.translate(_DASHES)
+    return t
 
 def _profile_key(p):
     return re.sub(r"[\s-]+", "_", _norm(p).strip().lower())
@@ -74,9 +87,13 @@ def summary(checklist):
 
 def sensitive_check(text):
     """Flag full SSN / card numbers so they are never put in a draft. Never echoes the number."""
-    t = _norm(text)
-    has_ssn, has_card = bool(SSN.search(t)), bool(CARD.search(t))
-    red = SSN.sub("[removed]", CARD.sub("[removed]", t)) if (has_ssn or has_card) else t
+    t = _hide_numbers(_norm(text))
+    has_card = bool(CARD.search(t) or LOOSE_CARD.search(t))
+    has_ssn = bool(SSN.search(t) or LOOSE_SSN.search(t))
+    red = t
+    if has_ssn or has_card:
+        for rx in (CARD, LOOSE_CARD, SSN, LOOSE_SSN):
+            red = rx.sub("[removed]", red)
     msg = ("Looks like a full SSN or card number. Don't paste it here. Share it only by your preparer's secure portal, or use the last 4 digits." if (has_ssn or has_card) else "No full SSN or card number found.")
     return {"has_ssn": has_ssn, "has_card": has_card, "safe": not (has_ssn or has_card), "message": msg, "redacted_text": red,
             "looks_like_tax_question": bool(TAX_QUESTION.search(t))}
@@ -95,14 +112,18 @@ def draft_message(checklist, preparer="your preparer", sender="me", channel="ema
         r = sensitive_check(f)
         if not r["safe"]:
             raise ValueError("Remove SSN or card numbers first. Send those only by a secure portal, or use the last 4 digits.")
-    preparer, sender, note = _norm(preparer).strip() or "your preparer", _norm(sender).strip() or "me", _norm(note).strip()[:MAX_NOTE]
+    preparer, sender, note = _norm(preparer).strip() or "your preparer", _norm(sender).strip() or "me", _norm(note).strip()
+    long_note = len(note) > MAX_NOTE
+    note = note[:MAX_NOTE]
     sent = [c["item"] for c in checklist if c.get("status") in ("received", "sent_to_preparer")]
     missing = [c["item"] for c in checklist if c.get("status") == "missing"]
     warnings = []
+    if long_note:
+        warnings.append(f"Your note was longer than {MAX_NOTE} characters, so it was cut off. Send the rest to your preparer yourself.")
     if TAX_QUESTION.search(note):
         warnings.append(ADVICE_MSG + " Your note is included only as a question for your preparer.")
     if channel == "email":
-        lines = [f"Hi {preparer},", ""]
+        lines = [(f"Hi {preparer}," if preparer != "your preparer" else "Hi,"), ""]
         if sent: lines += ["I have these ready for you:"] + [f"- {i}" for i in sent] + [""]
         if missing: lines += ["Still waiting on:"] + [f"- {i}" for i in missing] + [""]
         if note: lines += [note, ""]

@@ -28,7 +28,7 @@ def test_empty_none_long_unicode():
 def test_line_numbers_multi_line():
     assert lines("ok\nPool TBD\nok\nMeeting 1/2/2020\n") == [2, 4]
 def test_invalid_dates_do_not_crash():
-    assert lines("Date 13/45/2026 and 02/30/2026") == []
+    assert lines("Date 13/45/2026 and 02/30/2026") == [1]  # impossible dates are flagged as not real, never crash
 def test_flag_wording_is_a_prompt_not_verdict():
     assert "may" in core.audit.__doc__.lower()
 
@@ -100,3 +100,23 @@ def test_site_only_writes_where_asked(tmp_path, monkeypatch):
     seen = []; real = builtins.open
     monkeypatch.setattr(builtins, "open", lambda p, *a, **k: (seen.append(str(p)), real(p, *a, **k))[1])
     core.build_site("X", "x", "# F", "# N", str(tmp_path)); assert seen and all(s.startswith(str(tmp_path)) for s in seen)
+
+
+# --- added in 2026-10-17 end-user test pass ---
+T0 = date(2026, 10, 17)
+def test_yearless_past_date_flagged():
+    assert core.audit("Next meeting: Oct 1", T0) and not core.audit("See you Dec 1", T0)
+def test_may_the_word_is_not_a_date():
+    assert core.audit("May is nice", T0) == []
+def test_newsletter_flags_past_and_placeholder_dates():
+    nl = core.build_newsletter("H", "Nov", [], [{"date": "3/4/2023", "what": "Meeting TBD"}])
+    assert "Board check" in nl and nl.splitlines()[-1].endswith("Draft for board review before sending._")
+def test_faq_placeholder_answer_gets_board_check():
+    assert "Board check" in core.build_faq([{"q": "Pool hours?", "a": "TBD"}])
+def test_newsletter_blank_name_refused():
+    import pytest
+    with pytest.raises(ValueError): core.build_newsletter("", "", [], [])
+def test_markup_in_text_is_escaped(tmp_path):
+    core.build_site("H", "<img src=x onerror=alert(1)>", "", "", str(tmp_path))
+    h = (tmp_path / "index.html").read_text()
+    assert "<img src=x" not in h and "&lt;img" in h

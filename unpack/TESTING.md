@@ -4,7 +4,7 @@ Today's date matters for "days from today", so sample 1 uses tomorrow's date.
 
 ## Run the automatic tests
 1. In a terminal: `cd tab-zero-studios/unpack && ../.venv/bin/python -m pytest -q`
-2. **Pass:** last line `31 passed`. **Broken:** any `FAILED`.
+2. **Pass:** last line `35 passed`. **Broken:** any `FAILED`.
 3. Server check: from `tab-zero-studios` run `.venv/bin/python mcp_smoke.py`. **Pass:** every line `PASS`, ending `18/18 MCP checks passed`.
 
 ## 5 sample letters (paste into `unpack_letter_markdown`)
@@ -36,3 +36,9 @@ Expected: Step: "Pay $40 by 10/30/2099." A "Heads up" section says a number was 
 
 ## What "pass" means
 Every sample matches, every output ends with the disclaimer, no invented dates, no SSN or card number anywhere.
+
+## Messy-input checks (all automated in `mcp_end_user.py`)
+Misspelled month (`by Decmber 31, 2099`) or impossible date (`02/30/2099`): "No clear date found ... Nothing was guessed". SSN or card typed as `1 2 3 - 4 5 - 6 7 8 9`, `4111-1111-1111-1111`, 16 digits in a row: all replaced by `[hidden number]`. A 100,000+ character letter: still answers, with a "very long" note.
+
+## Messy-input checks (all automated in `mcp_end_user.py`)
+Misspelled month (`by Decmber 31, 2099`) or impossible date (`02/30/2099`): "No clear date found ... Nothing was guessed". SSN or card typed as `1 2 3 - 4 5 - 6 7 8 9`, `4111-1111-1111-1111`, 16 digits in a row: all replaced by `[hidden number]`. A 100,000+ character letter: still answers, with a "very long" note.

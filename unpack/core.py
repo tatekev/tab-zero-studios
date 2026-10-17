@@ -36,6 +36,9 @@ INJECTION_RE = re.compile(r"ignore (?:all |any )?(?:the )?(?:previous|prior|abov
 MONEY = re.compile(r"\$\s?\d[\d,]*(?:\.\d{2})?")
 SSN = re.compile(r"(?<![\d-])\d{3}[- .]?\d{2}[- .]?\d{4}(?![\d-])")
 CARD = re.compile(r"(?<![\d-])(?:\d{4}[ -]){3}\d{1,7}(?![\d-])|(?<![\d-])\d{4}[ -]\d{6}[ -]\d{5}(?![\d-])|(?<![\d-])\d{13,19}(?![\d-])")
+# 9 digits split by single spaces/dashes/dots in any pattern (e.g. "1 2 3 - 4 5 - 6 7 8 9"); ZIP+4 is left alone
+LOOSE_SSN = re.compile(r"(?<!\d)(?<!\d[ .-])(?<!\d[ .-]{2})(?<!\d[ .-]{3})(?:\d[ .-]{0,3}){8}\d(?![ .-]{0,3}\d)")
+UNREAD_DATE = re.compile(r"\b(?:due|by|before|on or before|no later than|until|expires?)\s*(?:on\s*)?[:\-]?\s*(?:[A-Za-z]{3,10}\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:\s*,?\s*\d{4})?|\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}|\d{4}-\d{1,2}-\d{1,2})", re.I)
 STOP = set("the a an and or to of in on for you your is are was be this that with as at by it we our if not from have will please".split())
 
 # date patterns -> (regex, kind)
@@ -58,6 +61,7 @@ def redact(text):
         nonlocal n; n += 1; return "[hidden number]"
     text = CARD.sub(sub, text)
     text = SSN.sub(sub, text)
+    text = LOOSE_SSN.sub(lambda m: m.group(0) if re.fullmatch(r"\d{5}-\d{4}", m.group(0)) else sub(m), text)
     return text, n
 
 def _mk(y, mo, d):
@@ -176,6 +180,10 @@ def unpack(text, today=None):
         if nonen: by_when += ". This isn't English, so dates may have been missed"
     if (deadline or (future and not deadline)) and relative:
         by_when += f". Also: \"{relative[0]}\""
+    if not (deadline or future) and not past_deadline:
+        unread = [m.group(0) for m in UNREAD_DATE.finditer(safe_text) if not any(m.group(0).lower() in x["sentence"].lower() and x["date"] for x in dates)]
+        if unread and not relative:
+            by_when = "No clear date found. The letter seems to mention: \"" + unread[0][:60] + "\" but it is misspelled, impossible, or in a format Unpack does not know. Check the letter. Nothing was guessed"
     if unclear:
         by_when += ". Some dates had no year and look earlier than today; check: " + ", ".join(x["sentence"][:60] for x in unclear[:2])
 
@@ -189,7 +197,7 @@ def unpack(text, today=None):
         urgency = "low"
 
     guess = "This looks like" if score >= 2 else ("This might be" if score == 1 else "I can't tell for sure what this is; it reads like")
-    what = f"{guess} {'an' if kind[0] in 'AEIOUaeiou' or kind.startswith('HOA') else 'a'} {kind}." + (f" Amounts mentioned: {', '.join(amounts)}." if amounts else "")
+    what = f"{guess} {'an' if kind[0] in 'AEIOaeio' or kind.startswith('HOA') else 'a'} {kind}." + (f" Amounts mentioned: {', '.join(amounts)}." if amounts else "")
     others = [f"{x['date'].isoformat()}: {x['sentence'][:100]}" for x in future if x is not deadline][:5]
     by_when = by_when.rstrip(".") + "."
     return {

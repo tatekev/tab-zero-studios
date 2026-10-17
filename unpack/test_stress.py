@@ -82,3 +82,20 @@ def test_25_far_future_deadline_with_warning_words_not_medium():
     assert R("Pay by November 30, 2099 to avoid additional penalty and interest.")["urgency"] == "low"
 def test_26_article_an_hoa():
     assert "an HOA notice" in R("Lake Sample Homeowners Association violation notice.")["what_is_this"]
+
+
+# --- added in 2026-10-17 end-user test pass ---
+def test_spaced_ssn_hidden():
+    r = unpack("my ssn: 1 2 3 - 4 5 - 6 7 8 9. Pay by 12/31/2099.")
+    assert "1 2 3" not in str(r) and r["warnings"]
+
+def test_misspelled_month_does_not_invent_date():
+    r = unpack("Pleez pay $50 by Decmber 31, 2099 or els.")
+    assert r["by_when"].startswith("No clear date found") and "Nothing was guessed" in r["by_when"]
+    assert "2099" not in r["by_when"].split("mention")[0]
+
+def test_a_utility_grammar():
+    assert " an utility" not in unpack("Utility shutoff notice. Pay by 12/31/2099.")["what_is_this"]
+
+def test_tbd_placeholder_no_date():
+    assert unpack("Payment due: TBD. Respond by [date].")["by_when"].startswith("No clear date found")

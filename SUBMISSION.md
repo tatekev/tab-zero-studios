@@ -2,7 +2,7 @@
 
 Org name: Tab Zero Studios
 Handle: tabzerostudios   (fallback: tabzero-studios)
-Work email: itskevtate@gmail.com (default; change if wanted)
+Work email: kevin@tabzerostudios.com (forwards to tabzerostudios@gmail.com; forwarding being set up 2026-10-16)
 Website URL: optional, leave blank
 Logo: logo-tab-zero-studios-1024.png (1:1 PNG, dark plate)
 Note: form also asks "Where do you want to be listed?" (options not visible without the live form; pick Grok Bot).

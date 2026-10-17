@@ -60,7 +60,7 @@ def test_draft_bad_channel():
 def test_draft_is_draft_only_and_says_so():
     d = draft_message(build_checklist(["parent"])); assert "Nothing was sent" in d["note"] and "not tax advice" in d["note"]
 def test_draft_empty_checklist_ok():
-    assert "Hi your preparer" in draft_message([])["draft"]
+    assert "Hi," in draft_message([])["draft"]
 def test_never_computes_tax_user_asks():
     for q in ("how much tax will I owe", "How much will I owe this year?", "What is my refund going to be", "Should I itemize or take the standard deduction?", "can I deduct my home office"):
         r = scope_check(q); assert r["is_tax_advice_request"] and "can't" in r["message"] and not re.search(r"\$\s?\d", r["message"]), q
@@ -79,3 +79,21 @@ def test_stores_nothing(monkeypatch):
     c = build_checklist(["employee"]); draft_message(c); summary(c); sensitive_check("x")
 def test_sample_text_with_ssn_last4_ok_in_draft():
     draft_message([], note="Dependent SSN ends in 6789.")
+
+
+# --- added in 2026-10-17 end-user test pass ---
+import pytest
+@pytest.mark.parametrize("n", ["1 2 3 - 4 5 - 6 7 8 9", "123/45/6789", "123_45_6789", "123\u200b-45-6789", "123\u201345\u20136789", "\uff11\uff12\uff13-45-6789", "4 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"])
+def test_disguised_numbers_flagged_and_refused(n):
+    assert not sensitive_check("x " + n)["safe"]
+    assert "6789" not in sensitive_check("x " + n)["redacted_text"] or "6789" not in n
+    with pytest.raises(ValueError):
+        draft_message(build_checklist(["employee"]), note=n)
+
+@pytest.mark.parametrize("q", ["do I need to file?", "is my mortgage interest deductible", "calculate my taxes", "Do I qualify for the child tax credit", "what is my tax bracket"])
+def test_more_tax_advice_requests_declined(q):
+    assert scope_check(q)["is_tax_advice_request"]
+
+def test_long_note_cut_is_disclosed():
+    r = draft_message(build_checklist(["employee"]), note="x" * 5000)
+    assert any("cut off" in w for w in r["warnings"])

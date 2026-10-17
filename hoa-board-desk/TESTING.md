@@ -2,7 +2,7 @@
 
 ## Run the automatic tests
 1. `cd tab-zero-studios/hoa-board-desk && ../.venv/bin/python -m pytest -q`
-2. **Pass:** `29 passed`. **Broken:** any `FAILED`. They include the accessibility checks.
+2. **Pass:** `35 passed`. **Broken:** any `FAILED`. They include the accessibility checks.
 3. Server check from the top folder: `.venv/bin/python mcp_smoke.py`. **Pass:** all `PASS`, `18/18`.
 
 ## 5 samples
@@ -28,3 +28,9 @@ Page language set (`lang="en"`, or `es` etc.), one h1 per page and no skipped he
 A past date not flagged; a made-up source in the FAQ; a page that opens blank; more or fewer than 3 files; a crash on accented letters.
 ## What "pass" means
 All 5 samples match and all automatic tests pass.
+
+## Messy-input checks (all automated in `mcp_end_user.py`)
+`02/30/2023` is flagged as not a real date. `Next meeting: Oct 1` (no year, already passed this year) is flagged. A newsletter or FAQ containing a past date or `TBD` gets a visible "Board check" line before the closing line. A blank community or month name is refused. Note: sample 3's `Nov 5` has no year, so after Nov 5 it will also show a "Board check" line; that is correct.
+
+## Messy-input checks (all automated in `mcp_end_user.py`)
+`02/30/2023` is flagged as not a real date. `Next meeting: Oct 1` (no year, already passed this year) is flagged. A newsletter or FAQ containing a past date or `TBD` gets a visible "Board check" line before the closing line. A blank community or month name is refused. Note: sample 3's `Nov 5` has no year, so after Nov 5 it will also show a "Board check" line; that is correct.

@@ -4,13 +4,23 @@ Tax-document checklist and tracker, plus a draft email or text to your preparer.
 
 Part of **Tab Zero Studios** — *Tools for Atypical Thinkers, Everywhere.*
 
+## Install (no accounts, no keys, no credentials)
+Needs Python 3.10 or newer. From the repo's top folder:
+```
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+(Windows: `.venv\Scripts\pip` and `.venv\Scripts\python`.)
+
 ## Run
 ```
-pip install -r ../requirements.txt
-python server.py        # MCP server over stdio
-python -m pytest -q     # tests
+cd cpa-doc-prep
+../.venv/bin/python server.py     # starts the MCP server over stdio; your MCP client launches this for you
+../.venv/bin/python -m pytest -q  # optional: automatic tests
 ```
-MCP client config: `{"command":"python","args":["server.py"],"cwd":"cpa-doc-prep"}`
+MCP client config: `{"command":"<repo>/.venv/bin/python","args":["server.py"],"cwd":"<repo>/cpa-doc-prep"}`
+
+Quick check that everything works: `./run_all_checks.sh` from the top folder (sets itself up on first run; the last line should say `ALL GOOD`).
 
 ## Tools
 - `make_checklist(profiles)`: employee, investor, self_employed, parent, homeowner
@@ -20,4 +30,4 @@ MCP client config: `{"command":"python","args":["server.py"],"cwd":"cpa-doc-prep
 - `draft_preparer_message(...)`: draft only; you press send
 
 ## Privacy and limits
-Runs fully offline. Stores nothing and sends nothing; your client app keeps the checklist between calls. It checks only text passed to its tools (it can't stop you typing a number elsewhere). It refuses to put SSN/card-like numbers in a draft, and never computes tax or gives advice. Not legal, tax, or financial advice.
+Runs fully offline. Stores nothing and sends nothing; your client app keeps the checklist between calls. It checks only text passed to its tools (it can't stop you typing a number elsewhere). It refuses to put SSN/card-like numbers in a draft (including numbers disguised with odd spacing, dashes or zero-width characters), declines questions that ask what you owe or what to deduct (it recognizes common English phrasings only, so it can miss unusual ones), and never computes tax or gives advice. Not legal, tax, or financial advice.

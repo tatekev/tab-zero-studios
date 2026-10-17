@@ -6,7 +6,7 @@ Sample data only. Never paste a real SSN, card number, or real letter while test
 1. Open a terminal on the computer or box that holds this folder (or ask Cornelius: "Run the Tab Zero Studios self-check and show me the last 3 lines").
 2. Copy and paste: `cd tab-zero-studios && ./run_all_checks.sh`
 3. Wait about 10 seconds.
-4. **Pass looks like:** the last line says `ALL GOOD`, and you see `31 passed`, `54 passed`, `29 passed`, and `18/18 MCP checks passed` (numbers may grow, never shrink).
+4. **Pass looks like:** the last line says `ALL GOOD`, and you see `35 passed`, `67 passed`, `35 passed`, `18/18 MCP checks passed`, and `90/90 end-user checks passed` (numbers may grow, never shrink).
 5. **Broken looks like:** the last line says `PROBLEM`, any line says `FAILED` or `FAIL`, or a Python error shows up. Don't submit. Screenshot it and send it to Cornelius.
 
 ## Test each tool by hand (5 samples each)
